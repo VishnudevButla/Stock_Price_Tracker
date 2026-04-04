@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login — StockTrack</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #0a0e0a;
+      --surface:  #111611;
+      --border:   #1e2a1e;
+      --green:    #00c853;
+      --red:      #ff3d3d;
+      --text:     #e8f0e8;
+      --muted:    #6b7d6b;
+      --mono:     'IBM Plex Mono', monospace;
+      --sans:     'DM Sans', sans-serif;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* subtle grid pattern in background */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 48px 48px;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .auth-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 400px;
+      padding: 1rem;
+    }
+
+    /* top brand */
+    .brand {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .brand-name {
+      font-family: var(--mono);
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--green);
+      letter-spacing: 0.05em;
+    }
+
+    .brand-name span { color: var(--muted); }
+
+    .brand-sub {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-top: 0.25rem;
+      font-family: var(--mono);
+    }
+
+    /* card */
+    .auth-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+    }
+
+    .auth-card h1 {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    /* flash messages */
+    .flash {
+      padding: 0.65rem 1rem;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      margin-bottom: 1rem;
+      border-left: 3px solid;
+    }
+    .flash.error   { background: #ff3d3d10; border-color: var(--red);   color: var(--red); }
+    .flash.success { background: #00c85310; border-color: var(--green); color: var(--green); }
+
+    /* form */
+    .form-group {
+      margin-bottom: 1.1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-family: var(--mono);
+      color: var(--muted);
+      margin-bottom: 0.4rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    input {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 0.65rem 0.9rem;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.875rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus {
+      border-color: var(--green);
+    }
+
+    input::placeholder { color: var(--muted); }
+
+    .btn-primary {
+      width: 100%;
+      background: var(--green);
+      color: #0a0e0a;
+      border: none;
+      border-radius: 7px;
+      padding: 0.75rem;
+      font-family: var(--mono);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: opacity 0.15s;
+      letter-spacing: 0.03em;
+    }
+
+    .btn-primary:hover { opacity: 0.88; }
+
+    .auth-footer {
+      text-align: center;
+      margin-top: 1.5rem;
+      font-size: 0.8rem;
+      color: var(--muted);
+    }
+
+    .auth-footer a {
+      color: var(--green);
+      text-decoration: none;
+    }
+
+    .auth-footer a:hover { text-decoration: underline; }
+
+    /* ticker tape at bottom */
+    .ticker-strip {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      padding: 0.4rem 0;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .ticker-content {
+      display: inline-block;
+      animation: scroll-left 30s linear infinite;
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--muted);
+    }
+
+    .ticker-content .up   { color: var(--green); }
+    .ticker-content .down { color: var(--red); }
+
+    @keyframes scroll-left {
+      from { transform: translateX(100vw); }
+      to   { transform: translateX(-100%); }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="brand">
+      <div class="brand-name">stock<span>track</span></div>
+      <div class="brand-sub">real-time market analytics</div>
+    </div>
+
+    <div class="auth-card">
+      <h1>Sign in</h1>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+          <div class="flash {{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endwith %}
+
+      <form method="POST" action="{{ url_for('login') }}">
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email"
+                 placeholder="you@example.com" required/>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" name="password"
+                 placeholder="••••••••" required/>
+        </div>
+
+        <button type="submit" class="btn-primary">Sign in</button>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      Don't have an account? <a href="{{ url_for('register') }}">Create one</a>
+    </div>
+  </div>
+
+  <!-- decorative ticker tape — static for now, will be live data later -->
+  <div class="ticker-strip">
+    <span class="ticker-content">
+      AAPL &nbsp;<span class="up">▲ 2.34%</span> &nbsp;&nbsp;
+      GOOGL &nbsp;<span class="down">▼ 0.87%</span> &nbsp;&nbsp;
+      MSFT &nbsp;<span class="up">▲ 1.12%</span> &nbsp;&nbsp;
+      TSLA &nbsp;<span class="down">▼ 3.21%</span> &nbsp;&nbsp;
+      AMZN &nbsp;<span class="up">▲ 0.65%</span> &nbsp;&nbsp;
+      NVDA &nbsp;<span class="up">▲ 4.78%</span> &nbsp;&nbsp;
+      META &nbsp;<span class="down">▼ 1.43%</span> &nbsp;&nbsp;
+      NFLX &nbsp;<span class="up">▲ 0.92%</span> &nbsp;&nbsp;
+      INFY &nbsp;<span class="up">▲ 1.05%</span> &nbsp;&nbsp;
+      TCS &nbsp;<span class="down">▼ 0.34%</span> &nbsp;&nbsp;
+      RELIANCE &nbsp;<span class="up">▲ 2.10%</span> &nbsp;&nbsp;
+    </span>
+  </div>
+
+</body>
+</html>

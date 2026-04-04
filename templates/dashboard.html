@@ -1,0 +1,418 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard — StockTrack{% endblock %}
+
+{% block extra_styles %}
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 2rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .page-header h1 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .page-header h1 span {
+    color: var(--muted);
+    font-weight: 300;
+    font-size: 0.9rem;
+    margin-left: 0.5rem;
+    font-family: var(--mono);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  /* ── MARKET STATUS PILL ── */
+  .market-status {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 0.3rem 0.75rem;
+  }
+
+  .market-status .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+    }
+
+    50% {
+      opacity: 0.3;
+    }
+  }
+
+  /* ── SEARCH BAR ── */
+  .search-bar {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    max-width: 420px;
+    width: 100%;
+  }
+
+  .search-bar input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.6rem 0.9rem;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    text-transform: uppercase;
+  }
+
+  .search-bar input::placeholder {
+    color: var(--muted);
+    text-transform: none;
+  }
+
+  .search-bar input:focus {
+    border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(0, 200, 83, 0.08);
+  }
+
+  .btn-search {
+    background: var(--green);
+    color: #0a0e0a;
+    border: none;
+    border-radius: 7px;
+    padding: 0.6rem 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.15s;
+    white-space: nowrap;
+  }
+
+  .btn-search:hover {
+    opacity: 0.85;
+    transform: translateY(-1px);
+  }
+
+  /* ── SECTION LABEL ── */
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── STOCK GRID ── */
+  .stock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  /* ── STOCK CARD ── */
+  .stock-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    text-decoration: none;
+    display: block;
+    transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stock-card:hover {
+    border-color: var(--green-mid);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .stock-card.positive::before,
+  .stock-card.negative::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    border-radius: 10px 0 0 10px;
+  }
+
+  .stock-card.positive::before {
+    background: var(--green);
+  }
+
+  .stock-card.negative::before {
+    background: var(--red);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.85rem;
+  }
+
+  .stock-ticker {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .stock-name {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 0.15rem;
+    line-height: 1.4;
+  }
+
+  .change-badge {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 500;
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .change-badge.up {
+    background: #00c85318;
+    color: var(--green);
+  }
+
+  .change-badge.down {
+    background: #ff3d3d18;
+    color: var(--red);
+  }
+
+  .stock-price {
+    font-family: var(--mono);
+    font-size: 1.4rem;
+    font-weight: 500;
+    color: var(--text);
+    letter-spacing: -0.02em;
+  }
+
+  .stock-price .currency {
+    font-size: 0.8rem;
+    color: var(--muted);
+    font-weight: 400;
+    margin-right: 0.1rem;
+  }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    background: var(--surface);
+  }
+
+  .empty-state p {
+    color: var(--muted);
+    font-size: 0.875rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .empty-state .hint {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--border);
+  }
+
+  /* ── SUMMARY BAR ── */
+  .summary-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .summary-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 1.25rem;
+    min-width: 140px;
+  }
+
+  .summary-item .s-label {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 0.3rem;
+  }
+
+  .summary-item .s-value {
+    font-family: var(--mono);
+    font-size: 1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .summary-item .s-value.green {
+    color: var(--green);
+  }
+
+  .summary-item .s-value.red {
+    color: var(--red);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 640px) {
+    .search-bar {
+      flex-direction: column;
+      max-width: 100%;
+    }
+
+    .btn-search {
+      width: 100%;
+    }
+
+    .summary-item {
+      flex: 1 1 100%;
+    }
+  }
+{% endblock %}
+
+
+
+{% block content %}
+
+<!-- ── PAGE HEADER ── -->
+<div class="page-header">
+  <h1>Dashboard <span>/ {{ current_user.username }}</span></h1>
+  <div class="header-right">
+    <div class="market-status">
+      <span class="dot"></span>
+      market open
+    </div>
+  </div>
+</div>
+
+<!-- ── SEARCH BAR ── -->
+<form class="search-bar" onsubmit="handleSearch(event)">
+  <input type="text" id="ticker-input" placeholder="Search ticker e.g. AAPL, INFY" maxlength="10" autocomplete="off"
+    required />
+  <button type="submit" class="btn-search">Search</button>
+</form>
+
+<!-- ── SUMMARY BAR ── -->
+<div class="summary-bar">
+    <div class="summary-item">
+      <div class="s-label">Watching</div>
+      <div class="s-value">{{ stocks|length if stocks else 0 }}</div>
+    </div>
+
+    <div class="summary-item">
+      <div class="s-label">Gainers</div>
+      <div class="s-value green">
+        {{ stocks|selectattr('change_percent', 'gt', 0)|list|length if stocks else 0 }}
+      </div>
+    </div>
+
+    <div class="summary-item">
+      <div class="s-label">Losers</div>
+      <div class="s-value red">
+        {{ stocks|selectattr('change_percent', 'lt', 0)|list|length if stocks else 0 }}
+      </div>
+    </div>
+  </div>
+
+<!-- ── WATCHED STOCKS ── -->
+<div class="section-label">Watched stocks</div>
+
+<div class="stock-grid">
+  {% if stocks %}
+      {% for stock in stocks %}
+        <a
+          href="{{ url_for('stocks.stock_detail', ticker=stock.ticker) }}"
+          class="stock-card {{ 'positive' if stock.change_percent >= 0 else 'negative' }}"
+        >
+          <div class="card-top">
+            <div>
+              <div class="stock-ticker">{{ stock.ticker }}</div>
+              <div class="stock-name">{{ stock.company_name or '—' }}</div>
+            </div>
+
+            <div class="change-badge {{ 'up' if stock.change_percent >= 0 else 'down' }}">
+              {{ '▲' if stock.change_percent >= 0 else '▼' }}
+              {{ "%.2f"|format(stock.change_percent|abs) }}%
+            </div>
+          </div>
+
+          <div class="stock-price">
+            <span class="currency">$</span>{{ "%.2f"|format(stock.current_price) }}
+          </div>
+        </a>
+      {% endfor %}
+    {% else %}
+  <div class="empty-state">
+    <p>No stocks on your dashboard yet.</p>
+    <p class="hint">Search for a ticker above and save it to your watchlist.</p>
+  </div>
+  {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+  function handleSearch(e) {
+    e.preventDefault();
+
+    const input = document.getElementById('ticker-input');
+    const ticker = input.value.trim().toUpperCase();
+
+    if (!ticker) return;
+
+    window.location.href = `/stock/${encodeURIComponent(ticker)}`;
+  }
+</script>
+{% endblock %}
