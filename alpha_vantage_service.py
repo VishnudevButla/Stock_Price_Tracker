@@ -145,11 +145,10 @@ def get_daily_history(ticker):
         return PriceHistory.query.filter_by(stock_id=stock.id)\
                                  .order_by(PriceHistory.date.asc()).all()
 
-    # Fetch from Alpha Vantage
     data = _get({
         "function":   "TIME_SERIES_DAILY",
         "symbol":     ticker,
-        "outputsize": "full"  # gives up to 20 years of data
+        "outputsize": "compact"  # last 100 data points
     })
 
     time_series = data.get("Time Series (Daily)", {})
