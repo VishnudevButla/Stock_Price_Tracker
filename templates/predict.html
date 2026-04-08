@@ -1,0 +1,352 @@
+{% extends 'base.html' %}
+
+{% block title %}Prediction Model — StockTrack{% endblock %}
+
+{% block extra_styles %}
+  .page-header {
+    margin-bottom: 2rem;
+  }
+
+  .page-header h1 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .page-header p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    max-width: 600px;
+    line-height: 1.5;
+  }
+
+  .selector-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .selector-card label {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .selector-card select, .selector-card input {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 1rem;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.15s;
+    min-width: 200px;
+  }
+
+  .selector-card select:focus, .selector-card input:focus {
+    border-color: var(--green);
+  }
+
+  .btn-predict {
+    background: var(--green);
+    color: #0a0e0a;
+    border: none;
+    border-radius: 6px;
+    padding: 0.65rem 1.5rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-predict:hover {
+    opacity: 0.85;
+  }
+
+  .chart-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    height: 500px;
+    position: relative;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    margin-bottom: 2rem;
+  }
+
+  .insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  
+  .insight-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+  }
+
+  .insight-title {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.75rem;
+  }
+
+  .insight-value {
+    font-family: var(--mono);
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+  
+  .insight-value.green { color: var(--green); }
+  .insight-value.red { color: var(--red); }
+  .insight-value.neutral { color: var(--text); }
+  
+  .disclaimer {
+    border-top: 1px dashed var(--border);
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.5;
+  }
+{% endblock %}
+
+{% block content %}
+
+<div class="page-header">
+  <h1>AI Predictive Analysis</h1>
+  <p>Our proprietary linear regression ML model analyzes your stock's 100-day rolling history alongside simple moving averages (SMAs) to extrapolate a mathematical trend forecast for the next 5 business days.</p>
+</div>
+
+<div class="selector-card">
+  <form method="GET" action="{{ url_for('predict') }}" style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; width: 100%;">
+    <label for="ticker-select">Select a saved stock:</label>
+    <select name="ticker" id="ticker-select" onchange="this.form.submit()">
+      <option value="">-- Choose Ticker --</option>
+      {% for t in all_tickers %}
+        <option value="{{ t }}" {% if ticker == t %}selected{% endif %}>{{ t }}</option>
+      {% endfor %}
+    </select>
+    
+    <label style="margin-left: auto;">Or search directly:</label>
+    <input type="text" name="ticker" placeholder="e.g. MSFT" value="{% if ticker not in all_tickers %}{{ ticker }}{% endif %}">
+    <button type="submit" class="btn-predict">Analyze</button>
+  </form>
+</div>
+
+{% if ticker and chart_dates %}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+      <h2 style="font-family: var(--mono); font-size: 1.5rem; color: var(--text);">{{ ticker }} <span style="font-size: 1rem; color: var(--muted);">Forecast Model</span></h2>
+      {% if stock %}
+          <div style="text-align: right; font-family: var(--mono);">
+             <div style="font-size: 0.8rem; color: var(--muted);">Current</div>
+             <div style="font-size: 1.25rem;">${{ "%.2f"|format(stock.current_price or 0) }}</div>
+          </div>
+      {% endif %}
+  </div>
+
+  <div class="chart-container">
+    <canvas id="predictChart"></canvas>
+  </div>
+
+  <div class="insights-grid">
+    <div class="insight-card">
+      <div class="insight-title">5-Day Projected Target</div>
+      {% set last_price = chart_prices[-1] %}
+      {% set last_pred = future_chart_prices[-1] %}
+      <div class="insight-value {{ 'green' if last_pred >= last_price else 'red' }}">
+        ${{ "%.2f"|format(last_pred) }}
+      </div>
+    </div>
+    
+    <div class="insight-card">
+      <div class="insight-title">Implied Move</div>
+      {% set diff = last_pred - last_price %}
+      {% set pct = (diff / last_price * 100) if last_price > 0 else 0 %}
+      <div class="insight-value {{ 'green' if diff >= 0 else 'red' }}">
+        {{ '▲' if diff >= 0 else '▼' }} {{ "%.2f"|format(pct|abs) }}%
+      </div>
+    </div>
+    
+    <div class="insight-card">
+      <div class="insight-title">Short-Term Trend (10 SMA)</div>
+      {% set current_sma = chart_sma10[-1] %}
+      <div class="insight-value {{ 'green' if last_price > current_sma else 'red' }}">
+        {{ 'Bullish' if last_price > current_sma else 'Bearish' }}
+      </div>
+    </div>
+  </div>
+
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This model utilizes Scikit-learn's Linear Regression module on trailing 100-day historical data. The stock market is fundamentally unpredictable and this forecast is strictly for educational and demonstration purposes. It does not constitute financial or investment advice.
+  </div>
+{% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  {% if ticker and chart_dates %}
+  document.addEventListener("DOMContentLoaded", function() {
+    const ctx = document.getElementById('predictChart').getContext('2d');
+    
+    const histDates = {{ chart_dates | tojson }};
+    const histPrices = {{ chart_prices | tojson }};
+    const sma10 = {{ chart_sma10 | tojson }};
+    const sma30 = {{ chart_sma30 | tojson }};
+    
+    const futureDates = {{ future_chart_dates | tojson }};
+    const futurePrices = {{ future_chart_prices | tojson }};
+    
+    // To connect the historical line to the prediction seamlessly:
+    const lastHistDate = histDates[histDates.length - 1];
+    const lastHistPrice = histPrices[histPrices.length - 1];
+    
+    // The X-axis has ALL dates (historical + future)
+    const allDates = histDates.concat(futureDates);
+    
+    // The historical dataset ONLY maps to historical dates (pads the rest with null)
+    let paddedHistPrices = [...histPrices];
+    for (let i = 0; i < futureDates.length; i++) {
+        paddedHistPrices.push(null);
+    }
+    
+    // The future dataset connects back to the last historical point then plots future (pads prefixes with null)
+    let paddedFuturePrices = [];
+    for (let i = 0; i < histDates.length - 1; i++) {
+        paddedFuturePrices.push(null);
+    }
+    paddedFuturePrices.push(lastHistPrice); // hook onto last day
+    paddedFuturePrices = paddedFuturePrices.concat(futurePrices);
+    
+    // Also pad SMAs
+    let paddedSma10 = [...sma10];
+    let paddedSma30 = [...sma30];
+    for(let i=0; i<futureDates.length; i++){
+        paddedSma10.push(null);
+        paddedSma30.push(null);
+    }
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: allDates,
+        datasets: [
+          {
+            label: 'Historical Close',
+            data: paddedHistPrices,
+            borderColor: '#e4e8e4',
+            borderWidth: 2,
+            pointRadius: 0,
+            pointHoverRadius: 5,
+            tension: 0.1
+          },
+          {
+            label: 'Model Prediction',
+            data: paddedFuturePrices,
+            borderColor: '#00c853',
+            borderWidth: 3,
+            borderDash: [5, 5],
+            pointRadius: 3,
+            pointBackgroundColor: '#0a0e0a',
+            pointBorderColor: '#00c853',
+            pointHoverRadius: 6,
+            tension: 0.1
+          },
+          {
+            label: '10-Day SMA',
+            data: paddedSma10,
+            borderColor: 'rgba(255, 171, 0, 0.7)',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.1
+          },
+          {
+            label: '30-Day SMA',
+            data: paddedSma30,
+            borderColor: 'rgba(41, 182, 246, 0.5)',
+            borderWidth: 1.5,
+            pointRadius: 0,
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            display: true,
+            labels: {
+              color: '#6b7c6b',
+              font: { family: "'IBM Plex Mono', monospace", size: 12 }
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(19, 25, 19, 0.9)',
+            titleColor: '#6b7c6b',
+            titleFont: { family: "'IBM Plex Mono', monospace", size: 13 },
+            bodyColor: '#e4e8e4',
+            bodyFont: { family: "'IBM Plex Mono', monospace", size: 14, weight: 'bold' },
+            borderColor: '#1f2b1f',
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: function(context) {
+                return context.dataset.label + ': $' + context.parsed.y.toFixed(2);
+              }
+            }
+          }
+        },
+        interaction: {
+          intersect: false,
+          mode: 'index',
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false,
+              drawBorder: false
+            },
+            ticks: {
+              autoSkip: true,
+              maxTicksLimit: 10,
+              color: '#6b7c6b',
+              font: { family: "'IBM Plex Mono', monospace", size: 11 }
+            }
+          },
+          y: {
+            grid: {
+              color: 'rgba(31, 43, 31, 0.5)',
+              drawBorder: false
+            },
+            ticks: {
+              color: '#6b7c6b',
+              font: { family: "'IBM Plex Mono', monospace", size: 11 },
+              callback: function(value) {
+                return '$' + value;
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+  {% endif %}
+</script>
+{% endblock %}

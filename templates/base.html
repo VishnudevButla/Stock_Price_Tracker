@@ -179,7 +179,7 @@
              class="{{ 'active' if request.endpoint == 'stock_list' }}">Stock list</a></li>
       <li><a href="{{ url_for('saved_stocks') }}"
              class="{{ 'active' if request.endpoint == 'saved_stocks' }}">Saved stocks</a></li>
-      <li><a href="#" class="{{ 'active' if request.endpoint == 'predict' }}">Predict</a></li>
+      <li><a href="{{ url_for('predict') }}" class="{{ 'active' if request.endpoint == 'predict' }}">Predict</a></li>
     </ul>
 
     <div class="nav-right">

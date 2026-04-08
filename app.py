@@ -2,8 +2,12 @@ from flask import Flask, redirect, render_template, url_for, request, flash, jso
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from config import Config
-from models import db, User, StockDetails, SavedListItem, SavedList
+from models import db, User, StockDetails, SavedListItem, SavedList, PriceHistory
 from alpha_vantage_service import get_top_gainers_losers, get_quote, get_daily_history
+import pandas as pd
+import numpy as np
+from sklearn.linear_model import LinearRegression
+from datetime import timedelta
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -128,6 +132,86 @@ def stock_list():
         most_active   = most_active,
         saved_tickers = saved_tickers,
         last_updated  = last_updated_str
+    )
+
+@app.route("/predict", methods=["GET"])
+@login_required
+def predict():
+    ticker = request.args.get("ticker", "").strip().upper()
+    
+    # 1. Fetch user context for dropdown
+    user_lists = SavedList.query.filter_by(user_id=current_user.id).all()
+    list_ids = [sl.id for sl in user_lists]
+    saved_items = SavedListItem.query.filter(SavedListItem.saved_list_id.in_(list_ids)).all() if list_ids else []
+    saved_tickers = list(set([item.ticker for item in saved_items]))
+    recent_tickers = session.get('recent_stocks', [])
+    all_tickers = sorted(list(set(saved_tickers + recent_tickers)))
+    
+    if not ticker:
+        return render_template("predict.html", all_tickers=all_tickers)
+        
+    # 2. Grab ticker data to predict
+    stock = get_quote(ticker)
+    history = get_daily_history(ticker)
+    
+    if not history or len(history) < 10:
+        flash(f"Not enough historical data to generate an accurate forecast for {ticker}.", "error")
+        return render_template("predict.html", all_tickers=all_tickers, ticker=ticker)
+
+    # 3. Model Pipeline! (Pandas)
+    data = [{"date": h.date, "close": h.close_price} for h in history]
+    df = pd.DataFrame(data)
+    df['date'] = pd.to_datetime(df['date'])
+    df = df.sort_values('date')
+    
+    # Calculate Simple Moving Averages for Visuals
+    df['SMA_10'] = df['close'].rolling(window=10).mean().fillna(df['close'])
+    df['SMA_30'] = df['close'].rolling(window=30).mean().fillna(df['close'])
+    
+    # Calculate baseline days for model
+    min_date = df['date'].min()
+    df['days_since'] = (df['date'] - min_date).dt.days
+    
+    # 4. Scikit-Learn Model
+    X = df[['days_since']].values
+    y = df['close'].values
+    
+    model = LinearRegression()
+    model.fit(X, y)
+    
+    # 5. Predict the next 5 business days
+    last_date = df['date'].max()
+    future_dates = []
+    days_to_add = 1
+    while len(future_dates) < 5:
+        next_day = last_date + timedelta(days=days_to_add)
+        if next_day.weekday() < 5: # Monday = 0, Friday = 4
+            future_dates.append(next_day)
+        days_to_add += 1
+        
+    future_days_since = [(d - min_date).days for d in future_dates]
+    X_future = np.array(future_days_since).reshape(-1, 1)
+    y_pred = model.predict(X_future)
+    
+    # 6. Format for Frontend Chart.js
+    chart_dates = df['date'].dt.strftime('%Y-%m-%d').tolist()
+    chart_prices = df['close'].tolist()
+    chart_sma10 = df['SMA_10'].round(2).tolist()
+    chart_sma30 = df['SMA_30'].round(2).tolist()
+    
+    future_chart_dates = [d.strftime('%Y-%m-%d') for d in future_dates]
+    future_chart_prices = [round(float(p), 2) for p in y_pred]
+    
+    return render_template("predict.html",
+        all_tickers=all_tickers,
+        ticker=ticker,
+        stock=stock,
+        chart_dates=chart_dates,
+        chart_prices=chart_prices,
+        chart_sma10=chart_sma10,
+        chart_sma30=chart_sma30,
+        future_chart_dates=future_chart_dates,
+        future_chart_prices=future_chart_prices
     )
 
 @app.route("/stock/<ticker>")

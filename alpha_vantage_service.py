@@ -155,15 +155,18 @@ def get_daily_history(ticker):
     if not time_series:
         return []
 
+    # Fetch all existing dates for this stock upfront to avoid autoflush IntegrityErrors
+    existing_records = PriceHistory.query.filter_by(stock_id=stock.id).all()
+    existing_dates = {rec.date for rec in existing_records}
+
     # Save each day to database
     for date_str, values in time_series.items():
-        date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        try:
+            date = datetime.strptime(date_str, "%Y-%m-%d").date()
+        except ValueError:
+            continue
 
-        exists = PriceHistory.query.filter_by(
-            stock_id=stock.id, date=date
-        ).first()
-
-        if not exists:
+        if date not in existing_dates:
             db.session.add(PriceHistory(
                 stock_id    = stock.id,
                 date        = date,
@@ -173,8 +176,13 @@ def get_daily_history(ticker):
                 close_price = _safe_float(values.get("4. close")),
                 volume      = _safe_int(values.get("5. volume")),
             ))
+            existing_dates.add(date)
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Error saving price history: {e}")
 
     return PriceHistory.query.filter_by(stock_id=stock.id)\
                              .order_by(PriceHistory.date.asc()).all()
