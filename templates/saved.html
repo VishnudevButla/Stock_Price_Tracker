@@ -1,15 +1,462 @@
-{%extends 'base.html' %}
+{% extends 'base.html' %}
 
-{%block title%}Saved Stocks{%endblock%}
+{% block title %}Saved Stocks — StockTrack{% endblock %}
 
-{%block extra_styles%}
+{% block extra_styles %}
 
-{%endblock%}
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
 
-{%block content%}
-    
-{%endblock%}
+  .page-header h1 { font-size: 1.1rem; font-weight: 500; }
 
-{%block extra_scripts%}
+  /* ── CREATE BUTTON ── */
+  .btn-create {
+    background: var(--green);
+    color: #0a0e0a;
+    border: none;
+    border-radius: 7px;
+    padding: 0.5rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
 
-{%endblock%}
+  .btn-create:hover { opacity: 0.85; }
+
+  /* ── WATCHLIST TABS ── */
+  .wl-tabs {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+  }
+
+  .wl-tab {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .wl-tab:hover   { border-color: var(--green-mid); }
+  .wl-tab.active  { border-color: var(--green); }
+
+  .wl-tab-name {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text);
+  }
+
+  .wl-tab-count {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 0.1rem 0.45rem;
+  }
+
+  .wl-tab .delete-wl {
+    font-size: 0.7rem;
+    color: var(--muted);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 0.15rem;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+
+  .wl-tab .delete-wl:hover { color: var(--red); }
+
+  /* ── WATCHLIST PANEL ── */
+  .wl-panel { display: none; }
+  .wl-panel.active { display: block; }
+
+  .section-label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── STOCK TABLE ── */
+  .stock-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .stock-table thead tr { border-bottom: 1px solid var(--border); }
+
+  .stock-table th {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 1rem 0.75rem 0;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .stock-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .stock-table tbody tr:hover { background: var(--surface); }
+  .stock-table tbody tr:last-child { border-bottom: none; }
+
+  .stock-table td {
+    padding: 0.85rem 1rem 0.85rem 0;
+    vertical-align: middle;
+  }
+
+  .td-ticker { font-family: var(--mono); font-weight: 500; font-size: 0.9rem; color: var(--text); }
+  .td-name   { color: var(--muted); font-size: 0.8rem; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .td-price  { font-family: var(--mono); font-weight: 500; color: var(--text); text-align: right; }
+  .td-change { font-family: var(--mono); font-size: 0.82rem; text-align: right; }
+  .td-change.up   { color: var(--green); }
+  .td-change.down { color: var(--red); }
+
+  .remove-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.2rem 0.55rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .remove-btn:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  .empty-state a { color: var(--green); text-decoration: none; }
+
+  /* ── NO WATCHLISTS ── */
+  .no-watchlists {
+    text-align: center;
+    padding: 4rem 1rem;
+    color: var(--muted);
+  }
+
+  .no-watchlists p { margin-bottom: 1rem; font-size: 0.875rem; }
+
+  /* ══════════════════════════════
+     MODAL
+  ══════════════════════════════ */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.75rem;
+    width: 100%;
+    max-width: 360px;
+    position: relative;
+  }
+
+  .modal h2 {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 1.25rem;
+  }
+
+  .modal input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.65rem 0.9rem;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    outline: none;
+    transition: border-color 0.15s;
+    margin-bottom: 1rem;
+  }
+
+  .modal input:focus { border-color: var(--green); }
+  .modal input::placeholder { color: var(--muted); }
+
+  .modal-error {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--red);
+    margin-bottom: 0.75rem;
+    display: none;
+  }
+
+  .modal-btns {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+  }
+
+  .btn-cancel {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.55rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-cancel:hover { border-color: var(--text); color: var(--text); }
+
+  .btn-confirm {
+    background: var(--green);
+    color: #0a0e0a;
+    border: none;
+    border-radius: 7px;
+    padding: 0.55rem 1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+
+  .btn-confirm:hover { opacity: 0.85; }
+
+{% endblock %}
+
+
+{% block content %}
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <h1>Saved stocks</h1>
+    <button class="btn-create" onclick="openCreateModal()">+ New watchlist</button>
+  </div>
+
+  {% if watchlist_data %}
+
+    <!-- ── WATCHLIST TABS ── -->
+    <div class="wl-tabs" id="wl-tabs">
+      {% for wl in watchlist_data %}
+      <div class="wl-tab {{ 'active' if loop.first }}"
+           onclick="switchWatchlist('wl-{{ wl.id }}', this)">
+        <span class="wl-tab-name">{{ wl.name }}</span>
+        <span class="wl-tab-count">{{ wl.stocks|length }}</span>
+        <button class="delete-wl"
+                onclick="deleteWatchlist(event, {{ wl.id }}, '{{ wl.name }}')">✕</button>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- ── WATCHLIST PANELS ── -->
+    {% for wl in watchlist_data %}
+    <div class="wl-panel {{ 'active' if loop.first }}" id="wl-{{ wl.id }}">
+
+      <div class="section-label">{{ wl.name }} — {{ wl.stocks|length }} stocks</div>
+
+      {% if wl.stocks %}
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>Ticker</th>
+            <th>Company</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Change</th>
+            <th style="text-align:right;">Remove</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in wl.stocks %}
+          <tr onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'">
+            <td class="td-ticker">{{ stock.ticker }}</td>
+            <td class="td-name">{{ stock.company_name or '—' }}</td>
+            <td class="td-price">${{ "%.2f"|format(stock.current_price or 0) }}</td>
+            <td class="td-change {{ 'up' if (stock.change_percent or 0) >= 0 else 'down' }}">
+              {{ '▲' if (stock.change_percent or 0) >= 0 else '▼' }}
+              {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%
+            </td>
+            <td style="text-align:right;">
+              <button class="remove-btn"
+                      onclick="removeStock(event, {{ wl.id }}, '{{ stock.ticker }}', this)">
+                remove
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      {% else %}
+      <div class="empty-state">
+        <p>No stocks in this watchlist yet.</p>
+        <a href="{{ url_for('stock_list') }}">Browse stocks →</a>
+      </div>
+      {% endif %}
+
+    </div>
+    {% endfor %}
+
+  {% else %}
+
+    <div class="no-watchlists">
+      <p>You have no watchlists yet.</p>
+      <button class="btn-create" onclick="openCreateModal()">Create your first watchlist</button>
+    </div>
+
+  {% endif %}
+
+  <!-- ══════════════════════════════
+       CREATE WATCHLIST MODAL
+  ══════════════════════════════ -->
+  <div class="modal-overlay" id="create-modal">
+    <div class="modal">
+      <h2>New watchlist</h2>
+      <input type="text" id="wl-name-input"
+             placeholder="e.g. Tech stocks, Indian markets"
+             maxlength="50"/>
+      <div class="modal-error" id="modal-error"></div>
+      <div class="modal-btns">
+        <button class="btn-cancel" onclick="closeCreateModal()">Cancel</button>
+        <button class="btn-confirm" onclick="createWatchlist()">Create</button>
+      </div>
+    </div>
+  </div>
+
+{% endblock %}
+
+
+{% block extra_scripts %}
+<script>
+
+  /* ── SWITCH WATCHLIST TAB ── */
+  function switchWatchlist(panelId, tabEl) {
+    document.querySelectorAll('.wl-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.wl-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(panelId).classList.add('active');
+    tabEl.classList.add('active');
+  }
+
+  /* ── CREATE MODAL ── */
+  function openCreateModal() {
+    document.getElementById('create-modal').classList.add('open');
+    document.getElementById('wl-name-input').focus();
+  }
+
+  function closeCreateModal() {
+    document.getElementById('create-modal').classList.remove('open');
+    document.getElementById('wl-name-input').value = '';
+    document.getElementById('modal-error').style.display = 'none';
+  }
+
+  /* ── CREATE WATCHLIST ── */
+  function createWatchlist() {
+    const name  = document.getElementById('wl-name-input').value.trim();
+    const error = document.getElementById('modal-error');
+
+    if (!name) {
+      error.textContent = 'Please enter a name.';
+      error.style.display = 'block';
+      return;
+    }
+
+    const form = new FormData();
+    form.append('name', name);
+
+    fetch('/watchlist/create', { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          closeCreateModal();
+          window.location.reload();
+        } else {
+          error.textContent = data.error || 'Something went wrong.';
+          error.style.display = 'block';
+        }
+      });
+  }
+
+  /* ── DELETE WATCHLIST ── */
+  function deleteWatchlist(event, listId, name) {
+    event.stopPropagation();
+    if (!confirm(`Delete watchlist "${name}"? This cannot be undone.`)) return;
+
+    fetch(`/watchlist/delete/${listId}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(() => window.location.reload());
+  }
+
+  /* ── REMOVE STOCK ── */
+  function removeStock(event, listId, ticker, btn) {
+    event.stopPropagation();
+
+    fetch(`/watchlist/${listId}/remove/${ticker}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          const row = btn.closest('tr');
+          row.remove();
+        }
+      });
+  }
+
+  /* ── CLOSE MODAL ON OVERLAY CLICK ── */
+  document.getElementById('create-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeCreateModal();
+  });
+
+  /* ── ENTER KEY IN MODAL ── */
+  document.getElementById('wl-name-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') createWatchlist();
+  });
+
+</script>
+{% endblock %}

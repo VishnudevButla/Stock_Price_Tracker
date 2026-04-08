@@ -63,7 +63,6 @@ class StockDetails(db.Model):
 
     id = db.Column(db.Integer, primary_key = True)
     ticker = db.Column(db.String(10), nullable = False)
-    name = db.Column(db.String(80), nullable = False)
     company_name = db.Column(db.String(250))
     current_price = db.Column(db.Float)
     open_price = db.Column(db.Float)

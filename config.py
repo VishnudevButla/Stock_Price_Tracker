@@ -17,3 +17,7 @@ class Config:
         "pool_pre_ping": True, 
         "pool_recycle": 300,
     }
+
+    # ── ALPHA VANTAGE ─────────────────────────────────────────────────────────
+    API_KEY = os.getenv("ALPHA_VANTAGE_KEY")
+    

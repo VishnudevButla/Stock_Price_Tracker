@@ -1,15 +1,738 @@
-{%extends 'base.html' %}
+{% extends 'base.html' %}
 
-{%block title%}Stocks List{%endblock%}
+{% block title %}Stock List — StockTrack{% endblock %}
 
-{%block extra_styles%}
+{% block extra_styles %}
 
-{%endblock%}
+  /* ── PAGE HEADER ── */
+  .page-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
 
-{%block content%}
-    
-{%endblock%}
+  .page-header h1 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--text);
+  }
 
-{%block extra_scripts%}
+  .last-updated {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+  }
 
-{%endblock%}
+  /* ── TABS ── */
+  .tabs {
+    display: flex;
+    gap: 0.25rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.25rem;
+    margin-bottom: 1.5rem;
+    width: fit-content;
+  }
+
+  .tab-btn {
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 0.45rem 1.1rem;
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+
+  .tab-btn:hover { color: var(--text); background: var(--surface2); }
+
+  .tab-btn.active {
+    background: var(--surface2);
+    color: var(--green);
+  }
+
+  /* ── TOOLBAR ── */
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .search-input {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.5rem 0.85rem;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    outline: none;
+    width: 220px;
+    transition: border-color 0.15s;
+    text-transform: uppercase;
+  }
+
+  .search-input::placeholder { text-transform: none; color: var(--muted); }
+  .search-input:focus { border-color: var(--green); }
+
+  /* view toggle */
+  .btn-group {
+    display: flex;
+    gap: 0.2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 0.2rem;
+  }
+
+  .btn-group button {
+    background: none;
+    border: none;
+    border-radius: 5px;
+    padding: 0.3rem 0.7rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .btn-group button.active,
+  .btn-group button:hover {
+    background: var(--surface2);
+    color: var(--green);
+  }
+
+  /* ── TABLE ── */
+  .stock-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+
+  .stock-table thead tr {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .stock-table th {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 1rem 0.75rem 0;
+    text-align: left;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+
+  .stock-table th:hover { color: var(--text); }
+  .stock-table th.sorted { color: var(--green); }
+
+  .stock-table tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+
+  .stock-table tbody tr:hover { background: var(--surface); }
+  .stock-table tbody tr:last-child { border-bottom: none; }
+
+  .stock-table td {
+    padding: 0.85rem 1rem 0.85rem 0;
+    vertical-align: middle;
+  }
+
+  .td-rank {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--muted);
+    width: 32px;
+  }
+
+  .td-ticker {
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text);
+  }
+
+  .td-name {
+    color: var(--muted);
+    font-size: 0.8rem;
+    max-width: 180px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .td-price {
+    font-family: var(--mono);
+    font-weight: 500;
+    color: var(--text);
+    text-align: right;
+  }
+
+  .td-change {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    text-align: right;
+  }
+
+  .td-volume {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .td-change.up   { color: var(--green); }
+  .td-change.down { color: var(--red); }
+
+  .save-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.2rem 0.55rem;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .save-btn:hover  { border-color: var(--green); color: var(--green); }
+  .save-btn.saved  { border-color: var(--green); color: var(--green); background: var(--green-dim); }
+
+  /* ── CARD GRID ── */
+  .stock-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+  }
+
+  .stock-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.1rem;
+    cursor: pointer;
+    transition: border-color 0.15s, transform 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stock-card:hover {
+    border-color: var(--green-mid);
+    transform: translateY(-2px);
+  }
+
+  .stock-card.positive::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--green);
+    border-radius: 10px 0 0 10px;
+  }
+
+  .stock-card.negative::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    background: var(--red);
+    border-radius: 10px 0 0 10px;
+  }
+
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.7rem;
+  }
+
+  .card-ticker { font-family: var(--mono); font-size: 0.95rem; font-weight: 500; color: var(--text); }
+  .card-name   { font-size: 0.7rem; color: var(--muted); margin-top: 0.1rem; }
+
+  .card-badge {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+
+  .card-badge.up   { background: #00c85318; color: var(--green); }
+  .card-badge.down { background: #ff3d3d18; color: var(--red); }
+
+  .card-price {
+    font-family: var(--mono);
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .card-price .currency { font-size: 0.75rem; color: var(--muted); margin-right: 0.1rem; }
+
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+  }
+
+  .card-volume { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); }
+
+  /* ── HIDDEN ── */
+  .hidden { display: none !important; }
+
+  /* ── EMPTY ── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    color: var(--muted);
+    font-size: 0.875rem;
+  }
+
+  @media (max-width: 640px) {
+    .search-input { width: 100%; }
+    .td-name, .td-volume { display: none; }
+  }
+
+{% endblock %}
+
+
+{% block content %}
+
+  <!-- ── PAGE HEADER ── -->
+  <div class="page-header">
+    <h1>Stock list</h1>
+    {% if last_updated %}
+    <span class="last-updated">updated {{ last_updated }}</span>
+    {% endif %}
+  </div>
+
+  <!-- ── TABS ── -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('gainers', this)">Top gainers</button>
+    <button class="tab-btn"        onclick="switchTab('losers',  this)">Top losers</button>
+    <button class="tab-btn"        onclick="switchTab('active',  this)">Most active</button>
+  </div>
+
+  <!-- ── TOOLBAR ── -->
+  <div class="toolbar">
+    <input type="text" class="search-input" id="search-input"
+           placeholder="Filter by ticker" oninput="filterStocks()"/>
+    <div class="btn-group">
+      <button onclick="setView('table')" class="active" data-view="table">Table</button>
+      <button onclick="setView('card')"  data-view="card">Cards</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════
+       GAINERS
+  ══════════════════════════════ -->
+  <div id="tab-gainers">
+
+    <div id="gainers-table">
+      {% if gainers %}
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ticker</th>
+            <th>Company</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Change</th>
+            <th style="text-align:right;">Volume</th>
+            <th style="text-align:right;">Save</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in gainers %}
+          <tr onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'"
+              data-ticker="{{ stock.ticker }}" data-name="{{ stock.company_name or '' }}">
+            <td class="td-rank">{{ loop.index }}</td>
+            <td class="td-ticker">{{ stock.ticker }}</td>
+            <td class="td-name">{{ stock.company_name or '—' }}</td>
+            <td class="td-price">${{ "%.2f"|format(stock.current_price or 0) }}</td>
+            <td class="td-change up">▲ {{ "%.2f"|format(stock.change_percent or 0) }}%</td>
+            <td class="td-volume">{{ "{:,}".format(stock.volume or 0) }}</td>
+            <td style="text-align:right;">
+              <button class="save-btn {{ 'saved' if stock.ticker in saved_tickers else '' }}"
+                      onclick="toggleSave(event, '{{ stock.ticker }}', this)">
+                {{ '✓ saved' if stock.ticker in saved_tickers else '+ save' }}
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No data yet. Check back shortly.</div>
+      {% endif %}
+    </div>
+
+    <div id="gainers-cards" class="hidden">
+      <div class="stock-grid">
+        {% for stock in gainers %}
+        <div class="stock-card positive"
+             data-ticker="{{ stock.ticker }}"
+             onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'">
+          <div class="card-top">
+            <div>
+              <div class="card-ticker">{{ stock.ticker }}</div>
+              <div class="card-name">{{ stock.company_name or '—' }}</div>
+            </div>
+            <div class="card-badge up">▲ {{ "%.2f"|format(stock.change_percent or 0) }}%</div>
+          </div>
+          <div class="card-price">
+            <span class="currency">$</span>{{ "%.2f"|format(stock.current_price or 0) }}
+          </div>
+          <div class="card-footer">
+            <span class="card-volume">vol {{ "{:,}".format(stock.volume or 0) }}</span>
+            <button class="save-btn {{ 'saved' if stock.ticker in saved_tickers else '' }}"
+                    onclick="toggleSave(event, '{{ stock.ticker }}', this)">
+              {{ '✓ saved' if stock.ticker in saved_tickers else '+ save' }}
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════
+       LOSERS
+  ══════════════════════════════ -->
+  <div id="tab-losers" class="hidden">
+
+    <div id="losers-table">
+      {% if losers %}
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ticker</th>
+            <th>Company</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Change</th>
+            <th style="text-align:right;">Volume</th>
+            <th style="text-align:right;">Save</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in losers %}
+          <tr onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'"
+              data-ticker="{{ stock.ticker }}" data-name="{{ stock.company_name or '' }}">
+            <td class="td-rank">{{ loop.index }}</td>
+            <td class="td-ticker">{{ stock.ticker }}</td>
+            <td class="td-name">{{ stock.company_name or '—' }}</td>
+            <td class="td-price">${{ "%.2f"|format(stock.current_price or 0) }}</td>
+            <td class="td-change down">▼ {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%</td>
+            <td class="td-volume">{{ "{:,}".format(stock.volume or 0) }}</td>
+            <td style="text-align:right;">
+              <button class="save-btn {{ 'saved' if stock.ticker in saved_tickers else '' }}"
+                      onclick="toggleSave(event, '{{ stock.ticker }}', this)">
+                {{ '✓ saved' if stock.ticker in saved_tickers else '+ save' }}
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No data yet. Check back shortly.</div>
+      {% endif %}
+    </div>
+
+    <div id="losers-cards" class="hidden">
+      <div class="stock-grid">
+        {% for stock in losers %}
+        <div class="stock-card negative"
+             data-ticker="{{ stock.ticker }}"
+             onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'">
+          <div class="card-top">
+            <div>
+              <div class="card-ticker">{{ stock.ticker }}</div>
+              <div class="card-name">{{ stock.company_name or '—' }}</div>
+            </div>
+            <div class="card-badge down">▼ {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%</div>
+          </div>
+          <div class="card-price">
+            <span class="currency">$</span>{{ "%.2f"|format(stock.current_price or 0) }}
+          </div>
+          <div class="card-footer">
+            <span class="card-volume">vol {{ "{:,}".format(stock.volume or 0) }}</span>
+            <button class="save-btn {{ 'saved' if stock.ticker in saved_tickers else '' }}"
+                    onclick="toggleSave(event, '{{ stock.ticker }}', this)">
+              {{ '✓ saved' if stock.ticker in saved_tickers else '+ save' }}
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══════════════════════════════
+       MOST ACTIVE
+  ══════════════════════════════ -->
+  <div id="tab-active" class="hidden">
+
+    <div id="active-table">
+      {% if most_active %}
+      <table class="stock-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ticker</th>
+            <th>Company</th>
+            <th style="text-align:right;">Price</th>
+            <th style="text-align:right;">Change</th>
+            <th style="text-align:right;">Volume</th>
+            <th style="text-align:right;">Save</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for stock in most_active %}
+          <tr onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'"
+              data-ticker="{{ stock.ticker }}" data-name="{{ stock.company_name or '' }}">
+            <td class="td-rank">{{ loop.index }}</td>
+            <td class="td-ticker">{{ stock.ticker }}</td>
+            <td class="td-name">{{ stock.company_name or '—' }}</td>
+            <td class="td-price">${{ "%.2f"|format(stock.current_price or 0) }}</td>
+            <td class="td-change {{ 'up' if (stock.change_percent or 0) >= 0 else 'down' }}">
+              {{ '▲' if (stock.change_percent or 0) >= 0 else '▼' }}
+              {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%
+            </td>
+            <td class="td-volume">{{ "{:,}".format(stock.volume or 0) }}</td>
+            <td style="text-align:right;">
+              <button class="save-btn {{ 'saved' if stock.ticker in saved_tickers else '' }}"
+                      onclick="toggleSave(event, '{{ stock.ticker }}', this)">
+                {{ '✓ saved' if stock.ticker in saved_tickers else '+ save' }}
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No data yet. Check back shortly.</div>
+      {% endif %}
+    </div>
+
+    <div id="active-cards" class="hidden">
+      <div class="stock-grid">
+        {% for stock in most_active %}
+        <div class="stock-card {{ 'positive' if (stock.change_percent or 0) >= 0 else 'negative' }}"
+             data-ticker="{{ stock.ticker }}"
+             onclick="window.location.href='{{ url_for('stock_detail', ticker=stock.ticker) }}'">
+          <div class="card-top">
+            <div>
+              <div class="card-ticker">{{ stock.ticker }}</div>
+              <div class="card-name">{{ stock.company_name or '—' }}</div>
+            </div>
+            <div class="card-badge {{ 'up' if (stock.change_percent or 0) >= 0 else 'down' }}">
+              {{ '▲' if (stock.change_percent or 0) >= 0 else '▼' }}
+              {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%
+            </div>
+          </div>
+          <div class="card-price">
+            <span class="currency">$</span>{{ "%.2f"|format(stock.current_price or 0) }}
+          </div>
+          <div class="card-footer">
+            <span class="card-volume">vol {{ "{:,}".format(stock.volume or 0) }}</span>
+            <button class="save-btn {{ 'saved' if stock.ticker in saved_tickers else '' }}"
+                    onclick="toggleSave(event, '{{ stock.ticker }}', this)">
+              {{ '✓ saved' if stock.ticker in saved_tickers else '+ save' }}
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+  </div>
+
+{% endblock %}
+
+{% block extra_scripts %}
+
+<!-- ── SAVE TO WATCHLIST MODAL ── -->
+<div class="modal-overlay" id="save-modal" style="
+  display:none; position:fixed; inset:0;
+  background:rgba(0,0,0,0.6); z-index:200;
+  align-items:center; justify-content:center;">
+  <div style="
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:12px; padding:1.75rem; width:100%; max-width:340px;">
+
+    <h2 style="font-size:1rem; font-weight:500; margin-bottom:1.25rem;">
+      Save <span id="modal-ticker"></span> to...
+    </h2>
+
+    <div id="watchlist-options" style="display:flex; flex-direction:column; gap:0.5rem; margin-bottom:1rem;"></div>
+
+    <div style="border-top:1px solid var(--border); padding-top:1rem; margin-top:0.5rem;">
+      <input type="text" id="new-wl-input"
+             placeholder="New watchlist name"
+             style="width:100%; background:var(--bg); border:1px solid var(--border);
+                    border-radius:7px; padding:0.6rem 0.9rem; color:var(--text);
+                    font-family:var(--mono); font-size:0.82rem; outline:none;
+                    margin-bottom:0.5rem;"
+             onfocus="this.style.borderColor='var(--green)'"
+             onblur="this.style.borderColor='var(--border)'"/>
+      <button onclick="createAndSave()" style="
+        width:100%; background:var(--green); color:#0a0e0a; border:none;
+        border-radius:7px; padding:0.6rem; font-family:var(--mono);
+        font-size:0.78rem; font-weight:500; cursor:pointer;">
+        + Create and save
+      </button>
+    </div>
+
+    <button onclick="closeSaveModal()" style="
+      width:100%; background:none; border:1px solid var(--border);
+      border-radius:7px; padding:0.5rem; font-family:var(--mono);
+      font-size:0.75rem; color:var(--muted); cursor:pointer; margin-top:0.5rem;">
+      Cancel
+    </button>
+  </div>
+</div>
+
+<script>
+
+  let currentView    = 'table';
+  let currentTab     = 'gainers';
+  let activeTicker   = null;
+
+  /* ── TAB / VIEW / FILTER (unchanged) ── */
+  function switchTab(tab, btn) {
+    currentTab = tab;
+    ['gainers', 'losers', 'active'].forEach(t => {
+      document.getElementById('tab-' + t).classList.toggle('hidden', t !== tab);
+    });
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    filterStocks();
+  }
+
+  function setView(view) {
+    currentView = view;
+    document.querySelectorAll('.btn-group button[data-view]').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.view === view);
+    });
+    ['gainers', 'losers', 'active'].forEach(tab => {
+      document.getElementById(tab + '-table').classList.toggle('hidden', view !== 'table');
+      document.getElementById(tab + '-cards').classList.toggle('hidden', view !== 'card');
+    });
+  }
+
+  function filterStocks() {
+    const query = document.getElementById('search-input').value.trim().toUpperCase();
+    ['tr[data-ticker]', '.stock-card[data-ticker]'].forEach(sel => {
+      document.querySelectorAll('#tab-' + currentTab + ' ' + sel).forEach(el => {
+        const match = (el.dataset.ticker || '').includes(query) ||
+                      (el.dataset.name   || '').toUpperCase().includes(query);
+        el.style.display = match ? '' : 'none';
+      });
+    });
+  }
+
+  /* ── SAVE MODAL ── */
+  function toggleSave(event, ticker, btn) {
+    event.stopPropagation();
+    activeTicker = ticker;
+    document.getElementById('modal-ticker').textContent = ticker;
+
+    // Load existing watchlists
+    fetch('/watchlists')
+      .then(r => r.json())
+      .then(lists => {
+        const container = document.getElementById('watchlist-options');
+        container.innerHTML = '';
+
+        if (lists.length === 0) {
+          container.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;">No watchlists yet. Create one below.</p>';
+        } else {
+          lists.forEach(wl => {
+            const btn = document.createElement('button');
+            btn.textContent = wl.name;
+            btn.style.cssText = `
+              background:var(--surface2); border:1px solid var(--border);
+              border-radius:7px; padding:0.55rem 1rem; font-family:var(--mono);
+              font-size:0.8rem; color:var(--text); cursor:pointer;
+              text-align:left; transition:border-color 0.15s;
+            `;
+            btn.onmouseover = () => btn.style.borderColor = 'var(--green)';
+            btn.onmouseout  = () => btn.style.borderColor = 'var(--border)';
+            btn.onclick = () => saveToWatchlist(wl.id, wl.name);
+            container.appendChild(btn);
+          });
+        }
+
+        document.getElementById('save-modal').style.display = 'flex';
+      });
+  }
+
+  function closeSaveModal() {
+    document.getElementById('save-modal').style.display = 'none';
+    document.getElementById('new-wl-input').value = '';
+    activeTicker = null;
+  }
+
+  function saveToWatchlist(listId, listName) {
+    fetch(`/watchlist/${listId}/add/${activeTicker}`, { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          // Mark all matching save buttons as saved
+          document.querySelectorAll(`[data-ticker="${activeTicker}"] .save-btn,
+                                     [data-ticker="${activeTicker}"].save-btn`).forEach(b => {
+            b.classList.add('saved');
+            b.textContent = '✓ saved';
+          });
+          closeSaveModal();
+        }
+      });
+  }
+
+  function createAndSave() {
+    const name = document.getElementById('new-wl-input').value.trim();
+    if (!name) return;
+
+    const form = new FormData();
+    form.append('name', name);
+
+    fetch('/watchlist/create', { method: 'POST', body: form })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          saveToWatchlist(data.id, data.name);
+        }
+      });
+  }
+
+  /* ── CLOSE MODAL ON OVERLAY CLICK ── */
+  document.getElementById('save-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeSaveModal();
+  });
+
+</script>
+{% endblock %}

@@ -371,8 +371,8 @@
   {% if stocks %}
       {% for stock in stocks %}
         <a
-          href="{{ url_for('stocks.stock_detail', ticker=stock.ticker) }}"
-          class="stock-card {{ 'positive' if stock.change_percent >= 0 else 'negative' }}"
+          href="{{ url_for('stock_detail', ticker=stock.ticker) }}"
+          class="stock-card {{ 'positive' if stock.change_percent and stock.change_percent >= 0 else 'negative' }}"
         >
           <div class="card-top">
             <div>
@@ -380,14 +380,14 @@
               <div class="stock-name">{{ stock.company_name or '—' }}</div>
             </div>
 
-            <div class="change-badge {{ 'up' if stock.change_percent >= 0 else 'down' }}">
-              {{ '▲' if stock.change_percent >= 0 else '▼' }}
-              {{ "%.2f"|format(stock.change_percent|abs) }}%
+            <div class="change-badge {{ 'up' if stock.change_percent and stock.change_percent >= 0 else 'down' }}">
+              {{ '▲' if stock.change_percent and stock.change_percent >= 0 else '▼' }}
+              {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%
             </div>
           </div>
 
           <div class="stock-price">
-            <span class="currency">$</span>{{ "%.2f"|format(stock.current_price) }}
+            <span class="currency">$</span>{{ "%.2f"|format(stock.current_price or 0) }}
           </div>
         </a>
       {% endfor %}
@@ -398,6 +398,36 @@
   </div>
   {% endif %}
 </div>
+
+<!-- ── RECENTLY VIEWED ── -->
+{% if recent_stocks %}
+<div class="section-label">Recently viewed</div>
+
+<div class="stock-grid">
+  {% for stock in recent_stocks %}
+    <a
+      href="{{ url_for('stock_detail', ticker=stock.ticker) }}"
+      class="stock-card {{ 'positive' if stock.change_percent and stock.change_percent >= 0 else 'negative' }}"
+    >
+      <div class="card-top">
+        <div>
+          <div class="stock-ticker">{{ stock.ticker }}</div>
+          <div class="stock-name">{{ stock.company_name or '—' }}</div>
+        </div>
+
+        <div class="change-badge {{ 'up' if stock.change_percent and stock.change_percent >= 0 else 'down' }}">
+          {{ '▲' if stock.change_percent and stock.change_percent >= 0 else '▼' }}
+          {{ "%.2f"|format((stock.change_percent or 0)|abs) }}%
+        </div>
+      </div>
+
+      <div class="stock-price">
+        <span class="currency">$</span>{{ "%.2f"|format(stock.current_price or 0) }}
+      </div>
+    </a>
+  {% endfor %}
+</div>
+{% endif %}
 
 {% endblock %}
 

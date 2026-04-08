@@ -204,6 +204,21 @@
     {% block content %}{% endblock %}
   </main>
 
+  <script>
+    // Auto-refresh the page after 60 seconds of inactivity
+    let refreshTimer = setTimeout(() => window.location.reload(), 60000);
+    
+    function resetTimer() {
+        clearTimeout(refreshTimer);
+        refreshTimer = setTimeout(() => window.location.reload(), 60000);
+    }
+    
+    document.addEventListener('mousemove', resetTimer);
+    document.addEventListener('keypress', resetTimer);
+    document.addEventListener('scroll', resetTimer);
+    document.addEventListener('click', resetTimer);
+  </script>
+
   {% block extra_scripts %}{% endblock %}
 </body>
 </html>
