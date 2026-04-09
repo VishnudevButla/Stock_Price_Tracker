@@ -229,3 +229,15 @@ def _safe_int(val):
         return int(float(str(val).replace(",", "")))
     except (TypeError, ValueError):
         return None
+
+# ─── NEWS SENTIMENT ───────────────────────────────────────────────────────────
+# Costs 1 API call per stock.
+# Returns recent news articles and their AI sentiment classification.
+
+def get_news_sentiment(ticker):
+    data = _get({
+        "function": "NEWS_SENTIMENT",
+        "tickers": ticker,
+        "limit": 5
+    })
+    return data.get("feed", [])

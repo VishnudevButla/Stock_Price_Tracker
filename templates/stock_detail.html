@@ -117,6 +117,58 @@
   .back-link:hover {
     color: var(--green);
   }
+
+  /* ── NEWS CARDS ── */
+  .news-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .news-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    text-decoration: none;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+  
+  .news-card:hover {
+    transform: translateX(4px);
+    border-color: var(--green-mid);
+  }
+
+  .news-title {
+    color: var(--text);
+    font-size: 1.05rem;
+    line-height: 1.4;
+    font-weight: 500;
+  }
+  
+  .news-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .sentiment-badge {
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-weight: 500;
+    font-size: 0.7rem;
+  }
+  .sentiment-badge.Bullish { background: #00c85318; color: var(--green); }
+  .sentiment-badge.Bearish { background: #ff3d3d18; color: var(--red); }
+  .sentiment-badge.Neutral { background: var(--surface2); color: var(--text); }
+  
 {% endblock %}
 
 {% block content %}
@@ -173,6 +225,25 @@
   <div class="stat-card">
     <div class="stat-label">Volume</div>
     <div class="stat-value">{{ "{:,}".format(stock.volume or 0) }}</div>
+  </div>
+</div>
+{% endif %}
+
+{% if news %}
+<div style="margin-top: 3rem;">
+  <h2 style="font-family: var(--mono); font-size: 1.1rem; color: var(--text);">Live News & Sentiment</h2>
+  <div class="news-grid">
+    {% for n in news %}
+      <a href="{{ n.url }}" target="_blank" class="news-card">
+        <div class="news-title">{{ n.title }}</div>
+        <div class="news-meta">
+          <span>Source: {{ n.source }}</span>
+          <span class="sentiment-badge {{ n.overall_sentiment_label.split(' ')[0] }}">
+            {{ n.overall_sentiment_label }}
+          </span>
+        </div>
+      </a>
+    {% endfor %}
   </div>
 </div>
 {% endif %}

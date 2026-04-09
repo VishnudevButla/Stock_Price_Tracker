@@ -230,6 +230,11 @@ def stock_detail(ticker):
     stock = get_quote(ticker)
     history = get_daily_history(ticker)
     
+    # IMPORT get_news_sentiment from alpha_vantage_service at the top, or just call it if already imported
+    # Wait, need to ensure get_news_sentiment is imported
+    from alpha_vantage_service import get_news_sentiment
+    news_feed = get_news_sentiment(ticker)
+    
     chart_dates = []
     chart_prices = []
     if history:
@@ -242,7 +247,8 @@ def stock_detail(ticker):
         ticker=ticker,
         stock=stock,
         chart_dates=chart_dates,
-        chart_prices=chart_prices
+        chart_prices=chart_prices,
+        news=news_feed
     )
 
 @app.route("/saved/add/<ticker>", methods=["POST"])
