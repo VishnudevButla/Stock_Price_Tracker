@@ -1,10 +1,40 @@
-## About the Project
+# QuantIQ
+Intelligent Stock Market Analyser
 
-This is a real-time stock price tracking and analytics web application built 
-with Python, Flask, and SQLite, integrated with the Alpha Vantage REST API. 
-Users can search for any stock by ticker symbol to view live quotes, historical 
-price trends, percentage changes, and moving averages. All queried data is 
-persisted into a local SQLite relational database for analysis and visualisation 
-using Chart.js. The application follows agile development practices, uses secure 
-environment variable-based API key management, and is deployed on Render as a 
-live cloud-hosted web service.
+A real-time stock price tracking and analytics web application built with Python, Flask, and PostgreSQL. Users can monitor live market data, track top gainers and losers, manage custom watchlists, and view interactive price charts with moving averages.
+
+**Live Demo:** [stock-tracker-xxxx.onrender.com](https://stock-tracker-xxxx.onrender.com)
+
+---
+
+## Features
+
+- **Live market data** — real-time stock quotes powered by the Alpha Vantage REST API
+- **Top gainers / losers / most active** — market overview refreshed every 24 hours with intelligent caching
+- **Interactive charts** — historical price charts with 5min, 2hr, daily, weekly, and yearly ranges built with Chart.js
+- **Moving averages** — 7-day and 30-day moving averages calculated and overlaid on price charts
+- **Custom watchlists** — create, name, and manage multiple personal stock watchlists
+- **Stock detail page** — full OHLCV data, percentage change, volume, and market depth per stock
+- **Price prediction** — ML-based price forecasting for individual stocks
+- **Secure authentication** — user registration and login with bcrypt password hashing via Flask-Login
+- **Responsive UI** — dark-themed, terminal-style interface optimised for both desktop and mobile
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend | Python 3.11, Flask |
+| Database | PostgreSQL (Neon serverless) |
+| ORM | SQLAlchemy |
+| Authentication | Flask-Login, Werkzeug |
+| Market Data | Alpha Vantage REST API |
+| Charts | Chart.js |
+| Frontend | HTML5, CSS3, Vanilla JavaScript, Jinja2 |
+| Deployment | Render |
+| Version Control | Git, GitHub |
+
+---
+
+## Project Structure
