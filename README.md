@@ -3,7 +3,7 @@ Intelligent Stock Market Analyser
 
 A real-time stock price tracking and analytics web application built with Python, Flask, and PostgreSQL. Users can monitor live market data, track top gainers and losers, manage custom watchlists, and view interactive price charts with moving averages.
 
-**Live Demo:** [stock-tracker-xxxx.onrender.com](https://stock-tracker-xxxx.onrender.com)
+**Live Demo:** https://quantiq-egq1.onrender.com.
 
 ---
 
